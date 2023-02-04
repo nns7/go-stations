@@ -21,7 +21,7 @@ func (h *HealthzHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	helth := &model.HealthzResponse{Message: "OK"}
 
 	err := json.NewEncoder(w).Encode(helth)
-     if err != nil {
-         log.Println(err)
-     }
+	if err != nil {
+		log.Println(err)
+	}
 }
