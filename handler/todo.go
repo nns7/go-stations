@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -19,10 +21,29 @@ func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 	}
 }
 
+// ServeHTTP implements http.Handler interface.
+func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		body := make([]byte, r.ContentLength)
+		r.Body.Read(body)
+		var createTODORequest model.CreateTODORequest
+		json.Unmarshal(body, &createTODORequest)
+		if len(createTODORequest.Subject) > 0 {
+			res, _ := h.Create(r.Context(), &createTODORequest)
+			json.NewEncoder(w).Encode(res)
+		} else {
+			w.WriteHeader(400)
+		}
+	default:
+		w.WriteHeader(400)
+	}
+}
+
 // Create handles the endpoint that creates the TODO.
 func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) (*model.CreateTODOResponse, error) {
-	_, _ = h.svc.CreateTODO(ctx, "", "")
-	return &model.CreateTODOResponse{}, nil
+	todo, _ := h.svc.CreateTODO(ctx, req.Subject, req.Description)
+	return &model.CreateTODOResponse{TODO: *todo}, nil
 }
 
 // Read handles the endpoint that reads the TODOs.
