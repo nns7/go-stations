@@ -55,18 +55,38 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 // ReadTODO reads TODOs on DB.
 func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*model.TODO, error) {
 	const (
-		read       = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC LIMIT ?`
-		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
+		read              = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC`
+		readWithSize      = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC LIMIT ?`
+		readWithIDAndSize = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
 	)
 
 	todos := []*model.TODO{}
-	if prevID > 0 {
-		stmt, err := s.db.PrepareContext(ctx, readWithID)
+	if prevID != 0 && size != 0 {
+		stmt, err := s.db.PrepareContext(ctx, readWithIDAndSize)
 		if err != nil {
 			return nil, err
 		}
 
 		rows, err := stmt.QueryContext(ctx, prevID, size)
+		if err != nil {
+			return nil, err
+		}
+
+		for rows.Next() {
+			var todo model.TODO
+			err := rows.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+			if err != nil {
+				return nil, err
+			}
+			todos = append(todos, &todo)
+		}
+	} else if size != 0 {
+		stmt, err := s.db.PrepareContext(ctx, readWithSize)
+		if err != nil {
+			return nil, err
+		}
+
+		rows, err := stmt.QueryContext(ctx, size)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +105,7 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 			return nil, err
 		}
 
-		rows, err := stmt.QueryContext(ctx, size)
+		rows, err := stmt.QueryContext(ctx)
 		if err != nil {
 			return nil, err
 		}
