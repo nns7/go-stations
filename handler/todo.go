@@ -60,6 +60,20 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(400)
 		}
 		json.NewEncoder(w).Encode(res)
+	case "DELETE":
+		body := make([]byte, r.ContentLength)
+		r.Body.Read(body)
+		var deleteTODORequest model.DeleteTODORequest
+		json.Unmarshal(body, &deleteTODORequest)
+		if len(deleteTODORequest.IDs) > 0 {
+			res, err := h.Delete(r.Context(), &deleteTODORequest)
+			if err != nil {
+				w.WriteHeader(404)
+			}
+			json.NewEncoder(w).Encode(res)
+		} else {
+			w.WriteHeader(400)
+		}
 	default:
 		w.WriteHeader(400)
 	}
@@ -95,6 +109,9 @@ func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) 
 
 // Delete handles the endpoint that deletes the TODOs.
 func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
-	_ = h.svc.DeleteTODO(ctx, nil)
+	err := h.svc.DeleteTODO(ctx, req.IDs)
+	if err != nil {
+		return nil, err
+	}
 	return &model.DeleteTODOResponse{}, nil
 }
