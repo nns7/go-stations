@@ -193,7 +193,7 @@ func (s *TODOService) DeleteTODO(ctx context.Context, ids []int64) error {
 	if err != nil {
 		return err
 	}
-	if affected <= 0 {
+	if affected == 0 {
 		return &model.ErrNotFound{
 			When: time.Now(),
 			What: "error not found",
